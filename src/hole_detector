@@ -23,7 +23,7 @@ if __name__ == '__main__':
 #!/usr/bin/env python
 
 import roslib
-roslib.load_manifest('basic_pub_sub')
+roslib.load_manifest('SAFMC-21-D2-Team2')
 import sys
 import rospy
 import math
