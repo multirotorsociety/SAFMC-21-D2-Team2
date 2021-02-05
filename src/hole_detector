@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""
+import rospy
+from std_msgs.msg import String
+import cv   
+
+def callback(data):
+    rospy.loginfo(rospy.get_caller_id() + " I heard %s", data.data)
+    
+def listener():
+    rospy.init_node('listener', anonymous = True)
+    
+    # Callback function gets run each time a message is received
+    rospy.Subscriber("chatter", String, callback)
+
+    # spin() keeps Python from exiting until this node is stopped
+    rospy.spin()
+
+if __name__ == '__main__':
+    listener()
+"""
+
+#!/usr/bin/env python
+
+import roslib
+roslib.load_manifest('basic_pub_sub')
+import sys
+import rospy
+import math
+from statistics import mean
+import numpy as np
+import cv2
+from std_msgs.msg import String
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+
+class image_converter:
+
+    def __init__(self):     
+        #self.image_pub = rospy.Publisher("camera/depth/image_rect_raw",Image)
+        self.bridge = CvBridge()
+        self.image_sub = rospy.Subscriber("/d400/depth/image_rect_raw",Image,self.callback)
+        self.running_sum=[]
+
+    def callback(self,data):
+        #print("image")
+        try:       
+            cv_image = self.bridge.imgmsg_to_cv2(data)
+        except CvBridgeError as e:
+            print(e)
+        cv_image=cv_image[:,80:]
+        # cv_image=cv_image[180:-180,240:-160]
+        (rows,cols) = cv_image.shape
+        cvhue=cv2.merge(((cv_image*255/5000).astype(np.uint8),np.full( (rows,cols),255, dtype=np.uint8 ),np.full( (rows,cols),255, dtype=np.uint8 )))
+        cvbgr=cv2.cvtColor(cvhue,cv2.COLOR_HSV2BGR)
+        cv2.imshow("Image window", cvbgr)
+        cv2.imshow("image",cv_image*20)
+        cv2.waitKey(3)
+        self.running_sum.append(np.mean(cv_image))
+        if len(self.running_sum)>20:
+            self.running_sum.pop(0)
+        print(mean(self.running_sum))
+
+        # cv_image=cv2.convertTo(cv_image, CV_8U, 0.00390625)
+        image_8=np.uint8(cv_image/256)
+        # image_8=cv2.cvtColor(cv_image,cv2.COLOR_GRAY2BGR)
+        print(image_8.dtype)
+
+        image_canny=cv2.Canny(image_8, 10, 15)
+        cv2.imshow("canny",image_canny)
+
+        ret, th = cv2.threshold(image_canny, 20, 255, 0)
+
+        # --- Find all the contours in the binary image ---
+        # contours, hierarchy = cv2.findContours(th, 2, 1)
+        kernel = np.ones((5, 5), np.uint8)
+        th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel)
+
+
+
+        cv2.imshow('th closing', th)
+        contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        cnt = contours
+        big_contour = []
+        max = 8000
+        image_c=cv2.cvtColor(image_8, cv2.COLOR_GRAY2BGR)
+        for i in cnt:
+            # print("countour")
+            area = cv2.contourArea(i)  # --- find the contour having biggest area ---
+            perimeter = cv2.arcLength(i, True)
+            if perimeter == 0:
+                break
+            circularity = 4 * math.pi * (area / (perimeter * perimeter))
+
+            if (area > max):
+                if 0.7 < circularity < 1.4:
+                    #contours_cirles.append(con)
+                    max = area
+                    big_contour = i
+                else:
+                    image_c = cv2.drawContours(image_c, big_contour, -1, (0, 0, 255),3)
+        # print(big_contour)
+        print(max)
+        image_c = cv2.drawContours(image_c, big_contour, -1, (0, 255, 0), 3)
+        cv2.imshow('final', image_c)
+
+
+
+def main(args):
+    print(sys.version)
+    ic = image_converter()
+    rospy.init_node('image_converter', anonymous=True)
+    try:
+        rospy.spin()
+    except KeyboardInterrupt:
+        print("Shutting down")
+    cv2.destroyAllWindows()
+ 
+if __name__ == '__main__':
+    main(sys.argv)
