@@ -12,13 +12,15 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 
-class image_converter:
+class BoxCV:
 
-    def __init__(self):     
+    def __init__(self, output=False):     
         #self.image_pub = rospy.Publisher("camera/depth/image_rect_raw",Image)
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/d400/depth/image_rect_raw", Image, self.image_cb)
-        self.running_sum=[]
+        self.running_sum = []
+        self.theta = np.array([0, 0])
+        self.output=output
 
     def image_cb(self, data):
         #print("image")
@@ -29,28 +31,29 @@ class image_converter:
         # cv_image=cv_image[:,80:]
         cv_image=cv_image[200:-200,160:]
         (rows,cols) = cv_image.shape
-        #cvhue=cv2.merge(((cv_image*255/5000).astype(np.uint8),np.full( (rows,cols),255, dtype=np.uint8 ),np.full( (rows,cols),255, dtype=np.uint8 )))
-        #cvbgr=cv2.cvtColor(cvhue,cv2.COLOR_HSV2BGR)
-        #cv2.imshow("Image window", cvbgr)
-        cv2.imshow("image",cv_image/18)
-        cv2.waitKey(3)
-        self.running_sum.append(np.mean(cv_image))
-        if len(self.running_sum)>20:
-            self.running_sum.pop(0)
-        print("mean:", mean(self.running_sum))
+        if self.output:
+            cv2.imshow("image",cv_image/18)
+            cv2.waitKey(3)
+
+            self.running_sum.append(np.mean(cv_image))
+            if len(self.running_sum)>20:
+                self.running_sum.pop(0)
+            print("mean:", mean(self.running_sum))
 
         y_mean = np.mean(cv_image, axis=0)
         x = np.array([[1, i/cols] for i in range(cols)]).reshape(cols, 2)
-        theta = np.matmul(np.matmul(np.linalg.inv(np.matmul(np.transpose(x), x)), np.transpose(x)), y_mean)
-        print(theta)
+        self.theta = np.matmul(np.matmul(np.linalg.inv(np.matmul(np.transpose(x), x)), np.transpose(x)), y_mean)
+        
+        if self.output:
+            print(self.theta)
+        
+    def get_theta(self):
+        return self.theta
 
-    #  try:
-        #    self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "bgr8"))
-        #  except CvBridgeError as e:
-        #    print(e)
+
 def main(args):
     print(sys.version)
-    ic = image_converter()
+    boxCV = BoxCV(output=True)
     rospy.init_node('image_converter', anonymous=True)
     try:
         rospy.spin()
