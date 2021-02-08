@@ -54,7 +54,7 @@ class Drone:
 
     # Callback functions
     def state_callback(self, data):
-        ''' Debugging logging
+        ''' Debugging logging'''
         if self.state.armed != data.armed:
             rospy.loginfo("armed state changed from {0} to {1}".format(
                 self.state.armed, data.armed))
@@ -66,7 +66,7 @@ class Drone:
         if self.state.mode != data.mode:
             rospy.loginfo("mode changed from {0} to {1}".format(
                 self.state.mode, data.mode))
-
+        '''
         if self.state.system_status != data.system_status:
             rospy.loginfo("system_status changed from {0} to {1}".format(
                 mavutil.mavlink.enums['MAV_STATE'][
@@ -78,12 +78,13 @@ class Drone:
     # Arm and takeoff to specific altitude
     def arm_and_takeoff(self, targetAltitude, timeout=10):
         # Arm:
+        # self.local_target_pub.publish(self.target_alt_msg)
         rospy.loginfo("setting FCU arm")
         loop_freq = 1  # Hz
         rate = rospy.Rate(loop_freq)
 
         for i in range(timeout * loop_freq):
-            if self.state.armed == True and self.state.mode == 'OFFBOARD':
+            if self.state.armed and self.state.mode == 'OFFBOARD':
                 rospy.loginfo("set arm and mode success")
                 break
             else:
@@ -95,8 +96,8 @@ class Drone:
                     rospy.logerr(e)
 
                 try:
-                    res = self.flight_mode_srv(custom_mode='OFFBOARD')
-                    if not res.success:
+                    res = self.flight_mode_srv(0, 'OFFBOARD')
+                    if not res.mode_sent:
                         rospy.logerr("failed to send mode command")
                 except rospy.ServiceException as e:
                     rospy.logerr(e)
@@ -104,17 +105,24 @@ class Drone:
             rate.sleep()
 
         # Takeoff:
-        self.set_altitude(targetAltitude)
+        rospy.loginfo("Taking off")
+        try:
+            res = self.flight_mode_srv(0, 'AUTO.TAKEOFF')
+            if not res.mode_sent:
+                rospy.logerr("failed to send mode command")
+        except rospy.ServiceException as e:
+            rospy.logerr(e)
 
     # Publishes target altitude
     def set_altitude(self, targetAltitude):
+        rospy.loginfo("Setting altitude")
         self.target_alt_msg.position.z = targetAltitude
         self.target_alt_msg.header.stamp = rospy.Time.now()
         self.local_target_pub.publish(self.target_alt_msg)
 
-
     # Give velocity based on the drone frame
     def send_velocity(self, vel_x, vel_y, yaw_rate, duration):
+        rospy.loginfo("Sending velocity command")
         self.target_vel_msg.velocity.x = vel_x
         self.target_vel_msg.velocity.y = vel_y
         self.target_vel_msg.yaw_rate = yaw_rate
@@ -125,17 +133,35 @@ class Drone:
     def set_land(self):
         rospy.loginfo("Landing")
         try:
-            res = self.flight_mode_srv(custom_mode='LAND')
-            if not res.success:
+            res = self.flight_mode_srv(0, 'AUTO.LAND')
+            if not res.mode_sent:
                 rospy.logerr("failed to send mode command")
         except rospy.ServiceException as e:
             rospy.logerr(e)
 
     # Disarm
     def disarm(self):
+        rospy.loginfo("Disarming")
         try:
             res = self.arm_srv(False)
             if not res.success:
                 rospy.logerr("failed to send disarm command")
         except rospy.ServiceException as e:
             rospy.logerr(e)
+
+def main():
+    rospy.init_node('drone_node', anonymous=True)
+    drone = Drone()
+    drone.arm_and_takeoff(1.5)
+    #rospy.sleep(10)
+    #drone.set_altitude(2.5)
+    #rospy.sleep(10)
+    #drone.set_land()
+    try:
+        rospy.spin()
+    except KeyboardInterrupt:
+        print("Shutting down")
+
+
+if __name__ == '__main__':
+    main()
