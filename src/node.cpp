@@ -56,12 +56,13 @@ int main(int argc, char **argv)
         mavros_msgs::PositionTarget::IGNORE_VX |
         mavros_msgs::PositionTarget::IGNORE_VY |
         mavros_msgs::PositionTarget::IGNORE_VZ |
-        mavros_msgs::PositionTarget::IGNORE_PX |
-        mavros_msgs::PositionTarget::IGNORE_PY |
         mavros_msgs::PositionTarget::IGNORE_YAW |
-        mavros_msgs::PositionTarget::IGNORE_YAW_RATE;
-    //current_target.coordinate_frame = 
-    //    mavros_msgs::PositionTarget::FRAME_BODY_OFFSET_NED;
+        mavros_msgs::PositionTarget::IGNORE_YAW_RATE |
+        mavros_msgs::PositionTarget::FORCE;
+    current_target.coordinate_frame = 9
+    current_target.position.x = 0;
+    current_target.position.y = 0;
+    current_target.position.z = 1.5;
 
     //send a few setpoints before starting
     for(int i = 100; ros::ok() && i > 0; --i){
