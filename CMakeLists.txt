@@ -10,6 +10,7 @@ project(SAFMC-21-D2-Team2)
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   rospy
+  roscpp
   sensor_msgs
   std_msgs
   mavros_msgs
@@ -24,3 +25,16 @@ find_package(catkin REQUIRED COMPONENTS
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 catkin_package()
 catkin_python_setup()
+
+include_directories(
+# include
+  ${catkin_INCLUDE_DIRS}
+)
+
+add_executable(node src/node.cpp)
+
+add_dependencies(node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(node
+  ${catkin_LIBRARIES}
+)
