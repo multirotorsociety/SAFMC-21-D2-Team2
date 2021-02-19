@@ -18,6 +18,7 @@ class BoxCV:
         #self.image_pub = rospy.Publisher("camera/depth/image_rect_raw",Image)
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/d400/depth/image_rect_raw", Image, self.image_cb)
+        #self.image_sub = rospy.Subscriber("/camera/depth/image_raw", Image, self.image_cb)
         self.running_sum = []
         self.theta = np.array([0, 0])
         self.output=output
@@ -29,7 +30,7 @@ class BoxCV:
         except CvBridgeError as e:
             print(e)
         # cv_image=cv_image[:,80:]
-        cv_image=cv_image[200:-200,160:]
+        cv_image=cv_image[200:-200,560:-400]
         (rows,cols) = cv_image.shape
         if self.output:
             cv2.imshow("image",cv_image/18)
@@ -49,6 +50,9 @@ class BoxCV:
         
     def get_theta(self):
         return self.theta
+    
+    def get_mean(self):
+        return mean(self.running_sum)
 
 
 def main(args):

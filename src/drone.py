@@ -14,7 +14,7 @@ class Drone:
     def __init__(self):
         
         self.local_pose = None
-        self.takeoff_height = 3.2
+        self.takeoff_height = 1.5
 
         self.arm_state = False
         self.offboard_state = False
