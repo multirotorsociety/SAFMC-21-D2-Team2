@@ -4,7 +4,7 @@ import rospy
 # import math
 from mavros_msgs.msg import PositionTarget, State
 from mavros_msgs.srv import CommandBool, SetMode
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from pyquaternion import Quaternion
 import time
 
@@ -23,6 +23,8 @@ class Drone:
         self.state = State()
 
         self.target_msg = PositionTarget()
+        self.vel_msg = TwistStamped()
+        self.mode = 0  # 0 for pose, 1 for velocity
 
         '''
         ros subscribers
@@ -30,11 +32,13 @@ class Drone:
         self.local_pose_sub = rospy.Subscriber("/mavros/local_position/pose", PoseStamped, self.local_pose_callback)
         self.mavros_sub = rospy.Subscriber("/mavros/state", State, self.mavros_state_callback)
         self.target_sub = rospy.Subscriber("/target", PositionTarget, self.target_callback)
+        self.vel_sub = rospy.Subscriber("/cmd_vel", TwistStamped, self.vel_callback)
 
         '''
         ros publishers
         '''
         self.local_target_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=10)
+        self.vel_pub = rospy.Publisher('mavros/setpoint_velocity/cmd_vel', TwistStamped, queue_size=10)
         
         '''
         ros services
@@ -66,7 +70,10 @@ class Drone:
         '''
         while self.arm_state and self.offboard_state and not rospy.is_shutdown():
             rate = rospy.Rate(10)
-            self.local_target_pub.publish(self.target_msg)
+            if self.mode == 0:
+                self.local_target_pub.publish(self.target_msg)
+            elif self.mode == 1:
+                self.vel_pub.publish(self.vel_msg)
 
             if (self.state is "LAND") and (self.local_pose.pose.position.z < 0.15):
                 if(self.disarm()):
@@ -118,6 +125,11 @@ class Drone:
 
     def target_callback(self, msg):
         self.target_msg = msg
+        self.mode = 0
+
+    def vel_callback(self, msg):
+        self.vel_msg = msg
+        self.mode = 1
     
     # Helper functions
     def q2yaw(self, q):
