@@ -33,6 +33,7 @@ import cv2
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
+from scipy.interpolate import splprep, splev
 
 class image_converter:
 
@@ -41,8 +42,13 @@ class image_converter:
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/d400/depth/image_rect_raw",Image,self.callback)
         self.running_sum=[]
+        self.centroids=[]
+        self.median_x=-1
+        self.median_y=-1
 
     def callback(self,data):
+        kernel = np.ones((5, 5), np.uint8)
+        kernel2 = np.ones((7, 7), np.uint8)
         #print("image")
         try:       
             cv_image = self.bridge.imgmsg_to_cv2(data)
@@ -51,57 +57,109 @@ class image_converter:
         cv_image=cv_image[:,80:]
         # cv_image=cv_image[180:-180,240:-160]
         (rows,cols) = cv_image.shape
+        
+        # cv_image = cv2.filter2D(cv_image,-1,kernel2)
+        #cv_image = cv2.blur(cv_image,(5,5))
         cvhue=cv2.merge(((cv_image*255/5000).astype(np.uint8),np.full( (rows,cols),255, dtype=np.uint8 ),np.full( (rows,cols),255, dtype=np.uint8 )))
         cvbgr=cv2.cvtColor(cvhue,cv2.COLOR_HSV2BGR)
         cv2.imshow("Image window", cvbgr)
-        cv2.imshow("image",cv_image*20)
+
+
+        cv2.imshow("image",cv_image*80)
         cv2.waitKey(3)
+        cv_image = cv2.morphologyEx(cv_image, cv2.MORPH_ERODE, kernel)
         self.running_sum.append(np.mean(cv_image))
         if len(self.running_sum)>20:
             self.running_sum.pop(0)
-        print(mean(self.running_sum))
+        #print(mean(self.running_sum))
 
         # cv_image=cv2.convertTo(cv_image, CV_8U, 0.00390625)
         image_8=np.uint8(cv_image/256)
         # image_8=cv2.cvtColor(cv_image,cv2.COLOR_GRAY2BGR)
-        print(image_8.dtype)
+        #print(image_8.dtype)
 
-        image_canny=cv2.Canny(image_8, 10, 15)
+        image_canny=cv2.Canny(image_8, 10, 20)
         cv2.imshow("canny",image_canny)
 
         ret, th = cv2.threshold(image_canny, 20, 255, 0)
 
         # --- Find all the contours in the binary image ---
         # contours, hierarchy = cv2.findContours(th, 2, 1)
-        kernel = np.ones((5, 5), np.uint8)
+
         th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel)
 
 
 
         cv2.imshow('th closing', th)
-        contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(th, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
         cnt = contours
         big_contour = []
-        max = 8000
+        max = 2000
         image_c=cv2.cvtColor(image_8, cv2.COLOR_GRAY2BGR)
+        
+        big_x=-1
+        big_y=-1
+
         for i in cnt:
             # print("countour")
             area = cv2.contourArea(i)  # --- find the contour having biggest area ---
-            perimeter = cv2.arcLength(i, True)
-            if perimeter == 0:
-                break
-            circularity = 4 * math.pi * (area / (perimeter * perimeter))
+            # perimeter = cv2.arcLength(i, True)
+            # if perimeter == 0:
+            #     break
+            # circularity = 4 * math.pi * (area / (perimeter * perimeter))
 
             if (area > max):
+                # cv2.putText(image, "center", (cX - 20, cY - 20),
+                # cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+                #draw the contour
+                # x,y = i.T
+                # # Convert from numpy arrays to normal arrays
+                # x = x.tolist()[0]
+                # y = y.tolist()[0]
+                # # https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.interpolate.splprep.html
+                # tck, u = splprep([x,y], u=None, s=1.0, per=1)
+                # # https://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.linspace.html
+                # u_new = np.linspace(u.min(), u.max(), 25)
+                # # https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.interpolate.splev.html
+                # x_new, y_new = splev(u_new, tck, der=0)
+                # # Convert it back to numpy format for opencv to be able to display it
+                # res_array = [[[int(ie[0]), int(ie[1])]] for ie in zip(x_new,y_new)]
+                # res_array=np.asarray(res_array, dtype=np.int32)
+                # area = cv2.contourArea(res_array)  # --- find the contour having biggest area ---
+                perimeter = cv2.arcLength(i, True)
+                if perimeter == 0:
+                    break
+                circularity = 4 * math.pi * (area / (perimeter * perimeter))
+
+                image_c = cv2.drawContours(image_c, i, -1, (0, 0, 255),3)
                 if 0.7 < circularity < 1.4:
+                    # compute the center of the contour
+                    M = cv2.moments(i)
+                    cX = int(M["m10"] / M["m00"])
+                    cY = int(M["m01"] / M["m00"])
+                    cv2.circle(image_c, (cX, cY), 7, (255, 255, 255), -1)
                     #contours_cirles.append(con)
                     max = area
                     big_contour = i
-                else:
-                    image_c = cv2.drawContours(image_c, big_contour, -1, (0, 0, 255),3)
+                    big_x=cX
+                    big_y=cY
+        if big_x!=-1:
         # print(big_contour)
-        print(max)
-        image_c = cv2.drawContours(image_c, big_contour, -1, (0, 255, 0), 3)
+            #print(max)
+            image_c = cv2.drawContours(image_c, big_contour, -1, (0, 255, 0), 3)
+            self.centroids.append([big_x*big_y,big_x,big_y])
+            if len(self.centroids)>5:
+                self.centroids.pop(0)
+            centroid_median=np.sort(self.centroids,axis=0)[len(self.centroids)//2]
+            self.median_x=centroid_median[1]
+            self.median_y=centroid_median[2]
+            print(big_x,big_y,self.median_x,self.median_y)
+        if self.median_x!=-1:
+            cv2.circle(image_c, (self.median_x, self.median_y), 7, (255, 0, 0), -1)
+            cv2.putText(image_c, "center", (self.median_x - 20, self.median_y - 20),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            
         cv2.imshow('final', image_c)
 
 
