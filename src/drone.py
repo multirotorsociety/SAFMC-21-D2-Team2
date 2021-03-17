@@ -2,6 +2,7 @@
 
 import rospy
 # import math
+from std_msgs.msg import String
 from mavros_msgs.msg import PositionTarget, State
 from mavros_msgs.srv import CommandBool, SetMode
 from geometry_msgs.msg import PoseStamped, TwistStamped
@@ -14,7 +15,7 @@ class Drone:
     def __init__(self):
         
         self.local_pose = None
-        self.takeoff_height = 1.5
+        self.takeoff_height = 1.1
 
         self.arm_state = False
         self.offboard_state = False
@@ -33,6 +34,7 @@ class Drone:
         self.mavros_sub = rospy.Subscriber("/mavros/state", State, self.mavros_state_callback)
         self.target_sub = rospy.Subscriber("/target", PositionTarget, self.target_callback)
         self.vel_sub = rospy.Subscriber("/cmd_vel", TwistStamped, self.vel_callback)
+        self.land_sub = rospy.Subscriber("/cmd_land", String, self.land_callback)
 
         '''
         ros publishers
@@ -55,7 +57,7 @@ class Drone:
             else:
                 print("Waiting for initialization.")
                 time.sleep(0.5)
-        self.target_msg = self.construct_target(0, 0, self.takeoff_height, self.q2yaw(self.local_pose.pose.orientation))
+        self.target_msg = self.construct_target(0, 0, self.takeoff_height, 0)#self.q2yaw(self.local_pose.pose.orientation))
 
         #print ("self.target_msg:", self.target_msg, type(self.target_msg))
 
@@ -82,23 +84,38 @@ class Drone:
             rate.sleep()
 
     # TODO: change this
-    def construct_target(self, x, y, z, yaw, yaw_rate=1):
+    # def construct_target(self, x, y, z, yaw, yaw_rate=1):
+    #     target_raw_pose = PositionTarget()
+    #     target_raw_pose.header.stamp = rospy.Time.now()
+
+    #     target_raw_pose.coordinate_frame = 9
+
+    #     target_raw_pose.position.x = x
+    #     target_raw_pose.position.y = y
+    #     target_raw_pose.position.z = z
+
+    #     target_raw_pose.type_mask = \
+    #         PositionTarget.IGNORE_VX + PositionTarget.IGNORE_VY + PositionTarget.IGNORE_VZ \
+    #         + PositionTarget.IGNORE_AFX + PositionTarget.IGNORE_AFY + PositionTarget.IGNORE_AFZ \
+    #         + PositionTarget.FORCE
+
+    #     target_raw_pose.yaw = yaw
+    #     target_raw_pose.yaw_rate = yaw_rate
+
+    #     return target_raw_pose
+
+    def construct_target(self, vx, vy, z, yaw_rate):
         target_raw_pose = PositionTarget()
         target_raw_pose.header.stamp = rospy.Time.now()
 
-        target_raw_pose.coordinate_frame = 9
+        target_raw_pose.coordinate_frame = 8
 
-        target_raw_pose.position.x = x
-        target_raw_pose.position.y = y
+        target_raw_pose.velocity.x = vx
+        target_raw_pose.velocity.y = vy
         target_raw_pose.position.z = z
-
-        target_raw_pose.type_mask = \
-            PositionTarget.IGNORE_VX + PositionTarget.IGNORE_VY + PositionTarget.IGNORE_VZ \
-            + PositionTarget.IGNORE_AFX + PositionTarget.IGNORE_AFY + PositionTarget.IGNORE_AFZ \
-            + PositionTarget.FORCE
-
-        target_raw_pose.yaw = yaw
         target_raw_pose.yaw_rate = yaw_rate
+
+        target_raw_pose.type_mask = 1987
 
         return target_raw_pose
 
@@ -130,6 +147,10 @@ class Drone:
     def vel_callback(self, msg):
         self.vel_msg = msg
         self.mode = 1
+
+    def land_callback(self, msg):
+        if msg.data == "LAND":
+            self.land()
     
     # Helper functions
     def q2yaw(self, q):
@@ -160,6 +181,14 @@ class Drone:
             return True
         else:
             print("Vechile Offboard failed")
+            return False
+
+    def land(self):
+        print("land called!")
+        if self.flight_mode_srv(custom_mode='AUTO.LAND'):
+            return True
+        else:
+            print("Vechile Land failed")
             return False
 
 

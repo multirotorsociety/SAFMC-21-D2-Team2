@@ -30,17 +30,18 @@ class BoxCV:
         except CvBridgeError as e:
             print(e)
         # cv_image=cv_image[:,80:]
-        cv_image=cv_image[200:-200,560:-400]
+        print(cv_image.shape)
+        cv_image=cv_image[140:-140,200:-280]
+        cv_image=cv_image/1000
         (rows,cols) = cv_image.shape
         if self.output:
             cv2.imshow("image",cv_image/18)
             cv2.waitKey(3)
 
-            self.running_sum.append(np.mean(cv_image))
-            if len(self.running_sum)>20:
-                self.running_sum.pop(0)
-            print("mean:", mean(self.running_sum))
-
+        self.running_sum.append(np.mean(cv_image))
+        if len(self.running_sum)>20:
+            self.running_sum.pop(0)
+        print("mean:", mean(self.running_sum))
         y_mean = np.mean(cv_image, axis=0)
         x = np.array([[1, i/cols] for i in range(cols)]).reshape(cols, 2)
         self.theta = np.matmul(np.matmul(np.linalg.inv(np.matmul(np.transpose(x), x)), np.transpose(x)), y_mean)
@@ -57,7 +58,7 @@ class BoxCV:
 
 def main(args):
     print(sys.version)
-    boxCV = BoxCV(output=True)
+    boxCV = BoxCV(output=False)
     rospy.init_node('image_converter', anonymous=True)
     try:
         rospy.spin()

@@ -24,11 +24,11 @@ target_pub = rospy.Publisher('target', PositionTarget, queue_size=10)
 rospy.init_node('cmd_node', anonymous=True)
 
 box = BoxCV(output=True)
-rospy.sleep(1)
+rospy.sleep(3)
 rate = rospy.Rate(10)
 
-px = 0.15
-pyaw = 0.8
+px = 0.25
+pyaw = 0.25
 
 while not rospy.is_shutdown():
     theta = box.get_theta()
@@ -48,9 +48,9 @@ while not rospy.is_shutdown():
     else:
         yr *= pyaw
         if yr > 0:
-            yr = min(yr, 1)
+            yr = min(yr, 0.4)
         elif yr < 0:
-            yr = max(yr, -1)
+            yr = max(yr, -0.4)
     
-    target_pub.publish(construct_target(vx, -0.3, 1.5, yr))
+    target_pub.publish(construct_target(vx, -0.15, 1.1, yr))
     rate.sleep()
