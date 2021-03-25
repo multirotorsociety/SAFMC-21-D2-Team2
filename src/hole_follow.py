@@ -6,7 +6,7 @@ from mavros_msgs.msg import PositionTarget
 from hole_detector import Hole_detector
 from nav_msgs.msg import Odometry
 from std_msgs.msg import String
-
+import time
 def construct_target(vx, vy, z, yaw_rate):
         #mask = 4035 # xy vel + z pos
         #mask = 3011 # xy vel + z pos + yaw
@@ -62,6 +62,7 @@ circlefound=False
 circlecount=0
 land=False
 while not rospy.is_shutdown():
+
     vx=0
     vy=0
     yr=0
@@ -78,6 +79,7 @@ while not rospy.is_shutdown():
                 circlefound=True
     elif land:
         print("landing")
+        #TOTO: change to find green square  
         land_pub.publish(String("LAND"))
     elif circlefound:
         print("moving forward")
@@ -88,5 +90,6 @@ while not rospy.is_shutdown():
         yr=0.1
     if distance >4.2:
         land=True
+        hole_detector.unsuscribe()
     target_pub.publish(construct_target(vx, vy, z, yr))
     rate.sleep()

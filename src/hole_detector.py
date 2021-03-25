@@ -39,6 +39,8 @@ class Hole_detector:
         self.cols=0
         self.lasthole=time.time()
         self.lasthough=time.time()
+    def unsuscribe(self):
+        self.image_sub.unregister()
     def callback(self,data):
         kernel = np.ones((5, 5), np.uint8)
         kernel2 = np.ones((7, 7), np.uint8)
