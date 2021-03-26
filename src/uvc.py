@@ -7,6 +7,9 @@ import numpy as np
 import cv2 as cv
 import time
 import datetime 
+
+using_vid=True
+if not using_vid:
 today = datetime.datetime.now()
 date_time = today.strftime("%m%d%Y%H%M%S")
 

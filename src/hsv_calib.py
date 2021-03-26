@@ -7,7 +7,7 @@ import numpy as np
 import cv2 as cv
 import time
 
-''' Using uvc cam
+# Using uvc cam
 nocam=True
 for i in range(6,10):
     cap = cv.VideoCapture(i)
@@ -21,10 +21,10 @@ for i in range(6,10):
         break
 if nocam:
     exit()
-'''
+
 
 # Opening from video file, for dev/test
-cap = cv.VideoCapture('/home/kevinskwk/Videos/safmc/output4.avi')
+# cap = cv.VideoCapture('/home/kevinskwk/Videos/safmc/output4.avi')
 
 time.sleep(0.1)
 

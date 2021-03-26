@@ -2,6 +2,7 @@
 import sys
 import numpy as np
 import cv2 as cv
+import time
 
 def green_square(frame, display=False):
     UpperH = 61         # 0-180
@@ -39,17 +40,21 @@ def green_square(frame, display=False):
                     cv.drawContours(frame, [c], -1, (255, 100, 255), 2)
                     cv.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 2)
                     cv.circle(frame, (rX, rY), 5, (0,255,255), -1)
+                    cv.circle(frame, (320, 240), 4, (0,0,255), -1)
                     cv.putText(frame, "centroid", (rX - 25, rY - 25), 
                         cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                     print('rX, rY:', rX, rY)
+                if w*h > 80000:
+                    break
     if display:
         cv.imshow('Mask', mask)
         cv.imshow("Image", frame)
+        cv.waitKey(1)
 
     return res
 
 def main(args):
-    ''' Using uvc cam
+    # Using uvc cam
     nocam=True
     for i in range(6,10):
         cap = cv.VideoCapture(i)
@@ -63,12 +68,9 @@ def main(args):
             break
     if nocam:
         exit()
-    '''
 
     # Opening from video file, for dev/test
-    cap = cv.VideoCapture('/home/kevinskwk/Videos/safmc/output4.avi')
-
-
+    #cap = cv.VideoCapture('/home/kevinskwk/Videos/safmc/output4.avi')
 
     while(cap.isOpened()):
         ret, frame = cap.read()
