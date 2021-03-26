@@ -24,7 +24,7 @@ if nocam:
 '''
 
 # Opening from video file, for dev/test
-cap = cv.VideoCapture('/home/kevinskwk/Videos/safmc/output2.avi')
+cap = cv.VideoCapture('/home/kevinskwk/Videos/safmc/output4.avi')
 
 time.sleep(0.1)
 
@@ -44,12 +44,12 @@ cv.createTrackbar('MinSize','Frame', 0 , 500, f)
 cv.createTrackbar('Filter','Mask', 0 , 10, f)
 
 cv.setTrackbarPos('UpperH', 'Mask', 61)
-cv.setTrackbarPos('UpperS', 'Mask', 177)
-cv.setTrackbarPos('UpperV', 'Mask', 173)
+cv.setTrackbarPos('UpperS', 'Mask', 192)
+cv.setTrackbarPos('UpperV', 'Mask', 190)
 cv.setTrackbarPos('LowerH', 'Mask', 37)
 cv.setTrackbarPos('LowerS', 'Mask', 67)
 cv.setTrackbarPos('LowerV', 'Mask', 62)
-cv.setTrackbarPos('MinSize','Frame', 150)
+cv.setTrackbarPos('MinSize','Frame', 500)
 cv.setTrackbarPos('Filter', 'Mask', 7)
 
 UpperH, UpperS, UpperV, LowerH, LowerS, LowerV, MinSize, Filter = 0, 0, 0, 0, 0, 0, 0, 0

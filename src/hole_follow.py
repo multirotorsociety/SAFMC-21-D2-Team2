@@ -8,31 +8,33 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import String
 import time
 def construct_target(vx, vy, z, yaw_rate):
-        #mask = 4035 # xy vel + z pos
-        #mask = 3011 # xy vel + z pos + yaw
-        #mask = 4088 # xyz pos
-        #mask = 3064 # xyz pos + yaw
-        target_raw_pose = PositionTarget()
-        target_raw_pose.header.stamp = rospy.Time.now()
+    #mask = 4035 # xy vel + z pos
+    #mask = 3011 # xy vel + z pos + yaw
+    #mask = 4088 # xyz pos
+    #mask = 3064 # xyz pos + yaw
+    target_raw_pose = PositionTarget()
+    target_raw_pose.header.stamp = rospy.Time.now()
 
-        target_raw_pose.coordinate_frame = 8
+    target_raw_pose.coordinate_frame = 8
 
-        target_raw_pose.velocity.x = vx
-        target_raw_pose.velocity.y = vy
-        target_raw_pose.position.z = z
-        #target_raw_pose.velocity.z = z
-        
-        target_raw_pose.yaw_rate = yaw_rate
+    target_raw_pose.velocity.x = vx
+    target_raw_pose.velocity.y = vy
+    target_raw_pose.position.z = z
+    #target_raw_pose.velocity.z = z
+    
+    target_raw_pose.yaw_rate = yaw_rate
 
-        target_raw_pose.type_mask = 1987
-        #target_raw_pose.type_mask = mask
+    target_raw_pose.type_mask = 1987
+    #target_raw_pose.type_mask = mask
 
-        return target_raw_pose
+    return target_raw_pose
+
 odom=Odometry()
 x=0
 y=0
 z=0
 distance=0
+
 def odometry_callback(thing):
     global odom,x,y,z, distance
     odom=thing

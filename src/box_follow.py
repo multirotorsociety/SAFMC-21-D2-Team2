@@ -6,19 +6,19 @@ from mavros_msgs.msg import PositionTarget
 from box import BoxCV
 
 def construct_target(vx, vy, z, yaw_rate):
-        target_raw_pose = PositionTarget()
-        target_raw_pose.header.stamp = rospy.Time.now()
+    target_raw_pose = PositionTarget()
+    target_raw_pose.header.stamp = rospy.Time.now()
 
-        target_raw_pose.coordinate_frame = 8
+    target_raw_pose.coordinate_frame = 8
 
-        target_raw_pose.velocity.x = vx
-        target_raw_pose.velocity.y = vy
-        target_raw_pose.position.z = z
-        target_raw_pose.yaw_rate = yaw_rate
+    target_raw_pose.velocity.x = vx
+    target_raw_pose.velocity.y = vy
+    target_raw_pose.position.z = z
+    target_raw_pose.yaw_rate = yaw_rate
 
-        target_raw_pose.type_mask = 1987
+    target_raw_pose.type_mask = 1987
 
-        return target_raw_pose
+    return target_raw_pose
 
 target_pub = rospy.Publisher('target', PositionTarget, queue_size=10)
 rospy.init_node('cmd_node', anonymous=True)
