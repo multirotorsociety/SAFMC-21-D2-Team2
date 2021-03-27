@@ -61,7 +61,7 @@ print(centre)
 stable_count = 0
 error = 10
 p = 0.0015
-d = 0.003
+# d = 0.003
 vmax = 0.6
 
 target_pub.publish(construct_target(0, 0, 1.0))
@@ -100,12 +100,8 @@ while cap.isOpened() and not rospy.is_shutdown():
             vx = 0
             vy = -0.2
         else:
-            vx = 0.1
-            vy = 0.1
-            stable_count += 1
-            if stable_count > 200:
-                print("Landing")
-                land_pub.publish(String("LAND"))
+            vx = 0.2
+            vy = 0.2
 
     elif curr_state == 2 and num == 1: # approaching
         z = 1.0
@@ -132,18 +128,23 @@ while cap.isOpened() and not rospy.is_shutdown():
             stable_count += 1
 
     if curr_state == 3:
-        vx = 0.0
-        vy = 0.0
-        if z > 0.3:
-            z -= 0.01
+        if curr_square < 4:
+            vx = 0.0
+            vy = 0.0
+            if z > 0.2:
+                z -= 0.01
+            else:
+                # TODO: send drop command
+                print('dropping)')
+                stable_count += 1
+            if stable_count > 100:
+                curr_state = 0
+                curr_square += 1
+                stable_count = 0
         else:
-            # TODO: send drop command
-            print('dropping)')
-            stable_count += 1
-        if stable_count > 100:
-            curr_state = 0
-            curr_square += 1
-            stable_count = 0
+            print("Landing")
+            land_pub.publish(String("LAND"))
+            break
 
     target_pub.publish(construct_target(vx, vy, z))
     print('square:', curr_square, 'state:', curr_state)

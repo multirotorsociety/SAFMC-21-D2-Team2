@@ -6,7 +6,7 @@ import sys
 import rospy
 from statistics import mean
 import numpy as np
-import cv2
+import cv2 as cv
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
@@ -35,8 +35,8 @@ class BoxCV:
         cv_image=cv_image/1000
         (rows,cols) = cv_image.shape
         if self.output:
-            cv2.imshow("image",cv_image/18)
-            cv2.waitKey(3)
+            cv.imshow("image",cv_image/18)
+            cv.waitKey(3)
 
         self.running_sum.append(np.mean(cv_image))
         if len(self.running_sum)>20:
@@ -64,7 +64,7 @@ def main(args):
         rospy.spin()
     except KeyboardInterrupt:
         print("Shutting down")
-    cv2.destroyAllWindows()
+    cv.destroyAllWindows()
  
 if __name__ == '__main__':
     main(sys.argv)
