@@ -39,7 +39,7 @@ total_yaw = 0
 state = 0
 stable_count = 0
 
-box = BoxCV(output=True)
+box = BoxCV(output=False)
 rate = rospy.Rate(20)
 rospy.sleep(3)
 # TODO: subscribe to odom and get initial position for reference
@@ -50,15 +50,15 @@ vy = 0
 yr = 0
 
 while not rospy.is_shutdown():
-    if state == 1 and total_yaw > 3*math.pi:  # finished navigating
+    if state == 1 and total_yaw > 3*math.pi-0.2:  # finished navigating
         stable_count += 1
-        if stable_count > 200:
+        if stable_count > 50:
             state = 2
             stable_count = 0
             total_yaw = 0
             break
     if state == 1:
-        vy = -0.2
+        vy = -0.3
         theta = box.get_theta()
         vx = box.get_mean() - 1.0
         if abs(vx) <= 0.05:
@@ -80,13 +80,13 @@ while not rospy.is_shutdown():
             elif yr < 0:
                 yr = max(yr, -0.4)
         
-        target_pub.publish(construct_target(vx, vy, 1.1, yr))
+        target_pub.publish(construct_target(vx, vy, 1.3, yr))
         total_yaw += yr / 20.0
 
     rate.sleep()
 
 # stop the drone first
-target_pub.publish(construct_target(0, 0, 1.1, 0))
+target_pub.publish(construct_target(0, 0, 1.3, 0))
 
 # boxCV job done, delete to release resources
 del box
@@ -107,9 +107,9 @@ if nocam:
     exit()
 
 ret, frame = cap.read()
-centre = (frame.shape[1]/2, frame.shape[0]/2)
-error = 10
-p = 0.0015
+centre = (frame.shape[1]/2, frame.shape[0]*2/3)
+error = 13
+p = 0.0013
 vmax = 0.6
 
 while cap.isOpened() and not rospy.is_shutdown():
@@ -122,13 +122,13 @@ while cap.isOpened() and not rospy.is_shutdown():
     if state == 2:  # turning
         vx = 0
         vy = 0
-        yr = 0.2
-        if total_yaw > math.pi:
+        yr = 0.6
+        if total_yaw > math.pi+0.2:
             state = 3
             total_yaw = 0
 
     if state == 3:
-        vx = 0.2
+        vx = 0.1
         vy = 0
         yr = 0
 
@@ -155,13 +155,13 @@ while cap.isOpened() and not rospy.is_shutdown():
 
         if vx == 0.0 and vy == 0.0:
             stable_count += 1
-        if stable_count > 50:  # stablized
+        if stable_count > 15:  # stablized
             print("Landing")
             land_pub.publish(String("LAND"))
             break
         print('vx:', vx, 'vy:', vy)
 
-    target_pub.publish(construct_target(vx, vy, 1.1, yr))
+    target_pub.publish(construct_target(vx, vy, 1.3, yr))
     total_yaw += (yr / 20.0)
     print('state:', state)
     rate.sleep()

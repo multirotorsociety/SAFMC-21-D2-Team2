@@ -40,7 +40,7 @@ nocam = True
 for i in range(6,10):
     cap = cv.VideoCapture(i)
     ret, frame = cap.read()
-    time.sleep(2)
+    time.sleep(1)
     if not cap.isOpened():
         print("Cannot open camera ",i)
         #exit()
@@ -56,11 +56,11 @@ if nocam:
 rospy.sleep(1)
 # Get the centre coordinate of the frame
 ret, frame = cap.read()
-centre = (frame.shape[1]/2, frame.shape[0]/2)
+centre = (frame.shape[1]/2, frame.shape[0]*2/3)
 print(centre)
 stable_count = 0
-error = 10
-p = 0.0015
+error = 13
+p = 0.0013
 # d = 0.003
 vmax = 0.6
 
@@ -80,28 +80,29 @@ while cap.isOpened() and not rospy.is_shutdown():
     else:
         if curr_state == 0:
             stable_count += 1
-            if stable_count > 10:
+            if stable_count > 8:
                 stable_count = 0
                 curr_state = 1
     
-    if curr_state == 2 and stable_count > 50:  # stablized
+    if curr_state == 2 and ((curr_square < 4 and stable_count > 35) or \
+       (curr_square == 4 and stable_count > 2)):  # stablized
         curr_state = 3
         stable_count = 0
 
     if curr_state <= 1:  # leaving or finding
         z = 0.6
         if curr_square <= 1:
-            vx = 0.2
-            vy = 0.2
+            vx = 0.4
+            vy = 0.4
         elif curr_square == 2:
-            vx = 0.2
+            vx = 0.4
             vy = 0
         elif curr_square == 3:
             vx = 0
-            vy = -0.2
+            vy = -0.4
         else:
-            vx = 0.2
-            vy = 0.2
+            vx = 0.4
+            vy = 0.4
 
     elif curr_state == 2 and num == 1: # approaching
         z = 1.0
