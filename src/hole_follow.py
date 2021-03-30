@@ -6,6 +6,9 @@ from mavros_msgs.msg import PositionTarget
 from hole_detector import Hole_detector
 from nav_msgs.msg import Odometry
 from std_msgs.msg import String
+import numpy as np
+import cv2 as cv
+from green_square import green_square
 import time
 def construct_target(vx, vy, z, yaw_rate):
     #mask = 4035 # xy vel + z pos
@@ -63,6 +66,10 @@ rate = rospy.Rate(10)
 circlefound=False
 circlecount=0
 land=False
+vx=0
+vy=0
+yr=0
+z=1.1
 while not rospy.is_shutdown():
 
     vx=0
@@ -79,10 +86,10 @@ while not rospy.is_shutdown():
             circlecount+=1
             if circlecount>45:
                 circlefound=True
-    elif land:
-        print("landing")
-        #TOTO: change to find green square  
-        land_pub.publish(String("LAND"))
+    # elif land:
+    #     print("landing")
+    #     #TOTO: change to find green square  
+    #     land_pub.publish(String("LAND"))
     elif circlefound:
         print("moving forward")
         vy=-space_center/1.6
@@ -90,8 +97,83 @@ while not rospy.is_shutdown():
         yr=0
     else:
         yr=0.1
-    if distance >4.2:
-        land=True
+    if distance >3.5:
         hole_detector.unsuscribe()
+        break
+        # land=True
     target_pub.publish(construct_target(vx, vy, z, yr))
     rate.sleep()
+
+# stop the drone first
+target_pub.publish(construct_target(0, 0, 1.3, 0))
+
+# boxCV job done, delete to release resources
+del hole_detector
+
+# Using uvc cam
+nocam = True
+for i in range(6,10):
+    cap = cv.VideoCapture(i)
+    ret, frame = cap.read()
+    time.sleep(1)
+    if not cap.isOpened():
+        print("Cannot open camera ",i)
+        #exit()
+    else:
+        nocam = False
+        break
+if nocam:
+    exit()
+
+ret, frame = cap.read()
+centre = (frame.shape[1]/2, frame.shape[0]*2/3)
+error = 13
+p = 0.0013
+vmax = 0.6
+stable_count=0
+while cap.isOpened() and not rospy.is_shutdown():
+    ret, frame = cap.read()
+    res = green_square(frame, display=False)
+    num = len(res)
+    if(num==1):
+        #found
+        yr = 0
+        vy = centre[0] - res[0][0]
+        vx = centre[1] - res[0][1]
+        if abs(vx) < error:
+            vx = 0.0
+        else:
+            vx *= p
+            if vx > 0:
+                vx = min(vx, vmax)
+            elif vx < 0:
+                vx = max(vx, -vmax)
+        if abs(vy) < error:
+            vy = 0.0
+        else:
+            vy *= p
+            if vy > 0:
+                vy = min(vy, vmax)
+            elif vy < 0:
+                vy = max(vy, -vmax)
+
+        if vx == 0.0 and vy == 0.0:
+            stable_count += 1
+        if stable_count > 15:  # stablized
+            print("Landing")
+            land_pub.publish(String("LAND"))
+            break
+        print('vx:', vx, 'vy:', vy)
+    else:
+        yr = 0
+        vy = 0
+        vx = 0.1
+
+
+    target_pub.publish(construct_target(vx, vy, 1.3, yr))
+    
+    rate.sleep()
+
+# When everything done, release the capture
+cap.release()
+cv.destroyAllWindows()

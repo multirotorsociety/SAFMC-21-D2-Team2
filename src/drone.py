@@ -7,6 +7,7 @@ from mavros_msgs.msg import PositionTarget, State
 from mavros_msgs.srv import CommandBool, SetMode
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from pyquaternion import Quaternion
+import serial
 import time
 
 
@@ -35,6 +36,7 @@ class Drone:
         self.target_sub = rospy.Subscriber("/target", PositionTarget, self.target_callback)
         self.vel_sub = rospy.Subscriber("/cmd_vel", TwistStamped, self.vel_callback)
         self.land_sub = rospy.Subscriber("/cmd_land", String, self.land_callback)
+        self.drop_sub = rospy.Subscriber("/cmd_drop", String, self.drop_callback)
 
         '''
         ros publishers
@@ -47,6 +49,11 @@ class Drone:
         '''
         self.arm_srv = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
         self.flight_mode_srv = rospy.ServiceProxy('/mavros/set_mode', SetMode)
+
+        '''
+        serial to arduino
+        '''
+        self.ser=serial.Serial('/dev/ttyACM0')
 
         rospy.loginfo("Drone initialized!")
 
@@ -151,7 +158,12 @@ class Drone:
     def land_callback(self, msg):
         if msg.data == "LAND":
             self.land()
-    
+    def drop_callback(self,msg):
+        if msg.data == "DROP":
+            self.ser.write(b'1')
+            time.sleep(1)
+            self.ser.write(b'0')
+
     # Helper functions
     def q2yaw(self, q):
         if isinstance(q, Quaternion):

@@ -6,6 +6,7 @@ import rospy
 import numpy as np
 import cv2 as cv
 from std_msgs.msg import String
+from nav_msgs.msg import Odometry
 from mavros_msgs.msg import PositionTarget
 from green_square import green_square
 import time
@@ -32,6 +33,19 @@ curr_state = 0
 
 target_pub = rospy.Publisher('target', PositionTarget, queue_size=10)
 land_pub = rospy.Publisher('/cmd_land', String, queue_size=10)
+drop_pub = rospy.Publisher('/cmd_drop', String, queue_size=10)
+
+
+drop_x=0
+drop_y=0
+prev_x=drop_x
+prev_y=drop_y
+def odom_callback(odometry):
+    global drop_x, drop_y
+    # print(odometry.pose.pose.position.x)
+    drop_x=odometry.pose.pose.position.x
+    drop_y=odometry.pose.pose.position.y
+odom_sub = rospy.Subscriber('/camera/odom/sample', Odometry, odom_callback)
 rospy.init_node('deploy_node', anonymous=True)
 rate = rospy.Rate(20)
 
@@ -87,6 +101,8 @@ while cap.isOpened() and not rospy.is_shutdown():
     if curr_state == 2 and ((curr_square < 4 and stable_count > 35) or \
        (curr_square == 4 and stable_count > 2)):  # stablized
         curr_state = 3
+        prev_x=drop_x
+        prev_y=drop_y
         stable_count = 0
 
     if curr_state <= 1:  # leaving or finding
@@ -130,15 +146,16 @@ while cap.isOpened() and not rospy.is_shutdown():
 
     if curr_state == 3:
         if curr_square < 4:
-            vx = 0.0
-            vy = 0.0
-            if z > 0.2:
+            vx = 0.0 +(drop_x-prev_x)
+            vy = 0.0 +(drop_y-prev_y+0.15)
+            if z > 0.35:
                 z -= 0.01
             else:
-                # TODO: send drop command
                 print('dropping)')
+                if stable_count==0:
+                    drop_pub.publish(String("DROP"))
                 stable_count += 1
-            if stable_count > 100:
+            if stable_count > 21:
                 curr_state = 0
                 curr_square += 1
                 stable_count = 0
