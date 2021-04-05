@@ -109,7 +109,10 @@ while cap.isOpened() and not rospy.is_shutdown():
         stable_count = 0
 
     if curr_state <= 1:  # leaving or finding
-        z = 0.6
+        if z < 0.6:
+            z += 0.02
+        else:
+            z = 0.6
         if curr_square <= 1:
             vx = 0.4
             vy = 0.4
