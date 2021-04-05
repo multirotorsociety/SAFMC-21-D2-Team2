@@ -7,7 +7,7 @@ import numpy as np
 import cv2 as cv
 from std_msgs.msg import String
 from mavros_msgs.msg import PositionTarget
-from green_square import green_square
+from down_cv import landing_pad, green_square
 import time
 
 def construct_target(vx, vy, z, yaw_rate=0):
@@ -71,7 +71,10 @@ z = 0.6
 
 while cap.isOpened() and not rospy.is_shutdown():
     ret, frame = cap.read()
-    res = green_square(frame, display=False)
+    if curr_state < 4:
+        res = green_square(frame, display=False)
+    else:
+        res = landing_pad(frame, display=False)
     # print(res)
     num = len(res)
     if num == 1:
