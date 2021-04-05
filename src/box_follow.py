@@ -33,6 +33,7 @@ rospy.init_node('cmd_node', anonymous=True)
 
 px = 0.25
 pyaw = 0.25
+dyaw = 0.2
 
 total_yaw = 0
 # state 0: idle, 1: navigating, 2: turning, 3: finding, 4: approaching
@@ -48,6 +49,7 @@ state = 1
 vx = 0
 vy = 0
 yr = 0
+last_yr = 0
 
 while not rospy.is_shutdown():
     if state == 1 and total_yaw > 3*math.pi-0.2:  # finished navigating
@@ -58,9 +60,10 @@ while not rospy.is_shutdown():
             total_yaw = 0
             break
     if state == 1:
-        vy = -0.3
+        vy = -0.5
         theta = box.get_theta()
-        vx = box.get_mean() - 1.0
+        # set distance to the wall here
+        vx = box.get_mean() - 0.8
         if abs(vx) <= 0.05:
             vx = 0.0
         else:
@@ -70,16 +73,16 @@ while not rospy.is_shutdown():
             elif vx < 0:
                 vx = max(vx, -0.6)
 
-        yr = theta[1]
-        if abs(yr) <= 0.01:
+        yerror = theta[1]
+        if abs(yerror) <= 0.01:
             yr = 0.0
         else:
-            yr *= pyaw
+            yr = pyaw*yerror + dyaw*(yerrorr-last_yr)
             if yr > 0:
                 yr = min(yr, 0.4)
             elif yr < 0:
                 yr = max(yr, -0.4)
-        
+        last_yr = yerror
         target_pub.publish(construct_target(vx, vy, 1.3, yr))
         total_yaw += yr / 20.0
 
