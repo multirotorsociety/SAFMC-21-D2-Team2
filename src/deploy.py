@@ -77,6 +77,7 @@ error = 13
 p = 0.0013
 # d = 0.003
 vmax = 0.6
+total_y = 0.0
 
 target_pub.publish(construct_target(0, 0, 1.0))
 vx = 0
@@ -109,13 +110,17 @@ while cap.isOpened() and not rospy.is_shutdown():
         stable_count = 0
 
     if curr_state <= 1:  # leaving or finding
-        if z < 0.6:
-            z += 0.02
-        else:
-            z = 0.6
+        #if z < 0.6:
+        #    z += 0.02
+        #else:
+        z = 0.6
         if curr_square <= 1:
             vx = 0.4
-            vy = 0.4
+            if total_y < 1.5:
+                vy = 0.4
+                total_y += 0.02
+            else:
+                vy = 0.0
         elif curr_square == 2:
             vx = 0.4
             vy = 0
@@ -154,14 +159,14 @@ while cap.isOpened() and not rospy.is_shutdown():
         if curr_square < 4:
             vx = 0.0 +(drop_x-prev_x)
             vy = 0.0 +(drop_y-prev_y+0.15)
-            if z > 0.35:
-                z -= 0.01
-            else:
-                print('dropping)')
-                if stable_count==0:
-                    drop_pub.publish(String("DROP"))
-                stable_count += 1
-            if stable_count > 21:
+            #if z > 0.35:
+            #    z -= 0.01
+            z = 0.6
+            print('dropping)')
+            if stable_count==0:
+                drop_pub.publish(String("DROP"))
+            stable_count += 1
+            if stable_count > 30:
                 curr_state = 0
                 curr_square += 1
                 stable_count = 0
