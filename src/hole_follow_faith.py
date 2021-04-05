@@ -9,8 +9,26 @@ from std_msgs.msg import String
 import numpy as np
 import cv2 as cv
 from down_cv import landing_pad, green_square
+from mavros_msgs.msg import PositionTarget
 # from green_square import green_square
 import time
+
+#odometry
+current_x=0
+current_y=0
+current_yaw=0
+prev_x=current_x
+prev_y=current_y
+prev_yaw=current_yaw
+def odom_callback(odometry):
+    global current_x, current_y
+    # print(odometry.pose.pose.position.x)
+    current_x=odometry.pose.pose.position.x
+    current_y=odometry.pose.pose.position.y
+    #TODO: get yaw
+odom_sub = rospy.Subscriber('/camera/odom/sample', Odometry, odom_callback)
+
+
 def construct_target(vx, vy, z, yaw_rate):
     #mask = 4035 # xy vel + z pos
     #mask = 3011 # xy vel + z pos + yaw
@@ -87,13 +105,16 @@ while not rospy.is_shutdown():
             circlecount+=1
             if circlecount>45:
                 circlefound=True
+                prev_x=current_x
+                prev_y=current_y
+
     # elif land:
     #     print("landing")
     #     #TOTO: change to find green square  
     #     land_pub.publish(String("LAND"))
     elif circlefound:
         print("moving forward")
-        vy=-space_center/1.6
+        vy=current_y-prev_y
         vx=0.2
         yr=0
     else:
