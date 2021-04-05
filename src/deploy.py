@@ -102,7 +102,7 @@ while cap.isOpened() and not rospy.is_shutdown():
                 stable_count = 0
                 curr_state = 1
     
-    if curr_state == 2 and ((curr_square < 4 and stable_count > 35) or \
+    if curr_state == 2 and ((curr_square < 4 and stable_count > 15) or \
        (curr_square == 4 and stable_count > 2)):  # stablized
         curr_state = 3
         prev_x=drop_x
@@ -128,8 +128,8 @@ while cap.isOpened() and not rospy.is_shutdown():
             vx = 0
             vy = -0.4
         else:
-            vx = 0.4
-            vy = 0.4
+            vx = 0.3
+            vy = 0.3
 
     elif curr_state == 2 and num == 1: # approaching
         z = 1.0
@@ -157,16 +157,16 @@ while cap.isOpened() and not rospy.is_shutdown():
 
     if curr_state == 3:
         if curr_square < 4:
-            vx = 0.0 +(drop_x-prev_x)
-            vy = 0.0 +(drop_y-prev_y+0.15)
-            #if z > 0.35:
-            #    z -= 0.01
-            z = 0.6
-            print('dropping)')
-            if stable_count==0:
-                drop_pub.publish(String("DROP"))
-            stable_count += 1
-            if stable_count > 30:
+            vx = 0.0 +(drop_x-prev_x-0.05)
+            vy = 0.0 +(drop_y-prev_y+0.18)
+            if z > 0.6:
+                z -= 0.01
+            else:
+                print('dropping)')
+                if stable_count==0:
+                    drop_pub.publish(String("DROP"))
+                stable_count += 1
+            if stable_count >80:
                 curr_state = 0
                 curr_square += 1
                 stable_count = 0

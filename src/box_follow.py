@@ -31,8 +31,9 @@ target_pub = rospy.Publisher('target', PositionTarget, queue_size=10)
 land_pub = rospy.Publisher('/cmd_land', String, queue_size=10)
 rospy.init_node('cmd_node', anonymous=True)
 
-px = 0.25
-pyaw = 0.25
+px = 0.5
+dx = 0.2
+pyaw = 0.4
 dyaw = 0.2
 
 total_yaw = 0
@@ -43,13 +44,13 @@ stable_count = 0
 box = BoxCV(output=False)
 rate = rospy.Rate(20)
 rospy.sleep(3)
-# TODO: subscribe to odom and get initial position for reference
 state = 1
 
 vx = 0
 vy = 0
 yr = 0
 last_yr = 0
+last_x = 1.0
 
 while not rospy.is_shutdown():
     if state == 1 and total_yaw > 3*math.pi-0.2:  # finished navigating
@@ -60,28 +61,29 @@ while not rospy.is_shutdown():
             total_yaw = 0
             break
     if state == 1:
-        vy = -0.5
+        vy = -0.4
         theta = box.get_theta()
         # set distance to the wall here
-        vx = box.get_mean() - 0.8
-        if abs(vx) <= 0.05:
+        xerror = box.get_mean() - 0.65
+        if abs(xerror) <= 0.05:
             vx = 0.0
         else:
-            vx *= px
+            vx = px*xerror + dx*(xerror-last_x)
             if vx > 0:
-                vx = min(vx, 0.6)
+                vx = min(vx, 0.5)
             elif vx < 0:
-                vx = max(vx, -0.6)
+                vx = max(vx, -0.5)
+        last_x = xerror
 
         yerror = theta[1]
-        if abs(yerror) <= 0.01:
+        if abs(yerror) <= 0.005:
             yr = 0.0
         else:
-            yr = pyaw*yerror + dyaw*(yerrorr-last_yr)
+            yr = pyaw*yerror + dyaw*(yerror-last_yr)
             if yr > 0:
-                yr = min(yr, 0.4)
+                yr = min(yr, 0.6)
             elif yr < 0:
-                yr = max(yr, -0.4)
+                yr = max(yr, -0.6)
         last_yr = yerror
         target_pub.publish(construct_target(vx, vy, 1.3, yr))
         total_yaw += yr / 20.0
@@ -126,7 +128,7 @@ while cap.isOpened() and not rospy.is_shutdown():
         vx = 0
         vy = 0
         yr = 0.6
-        if total_yaw > math.pi+0.2:
+        if total_yaw > math.pi+0.5:
             state = 3
             total_yaw = 0
 

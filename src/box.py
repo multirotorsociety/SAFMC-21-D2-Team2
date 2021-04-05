@@ -31,7 +31,7 @@ class BoxCV:
             print(e)
         # cv_image=cv_image[:,80:]
         print(cv_image.shape)
-        cv_image=cv_image[140:-140,200:-280]
+        cv_image=cv_image[140:-140,220:-220]
         cv_image=cv_image/1000
         (rows,cols) = cv_image.shape
         if self.output:

@@ -88,13 +88,13 @@ land=False
 vx=0
 vy=0
 yr=0
-z=1.1
+z=1.3
 while not rospy.is_shutdown():
 
     vx=0
     vy=0
     yr=0
-    z=1.1
+    z=1.3
     hole_center=hole_detector.get_hough()
     space_center=hole_detector.get_space()
     if circlefound==False and hole_center is not None:
@@ -115,11 +115,11 @@ while not rospy.is_shutdown():
     elif circlefound:
         print("moving forward")
         vy=current_y-prev_y
-        vx=0.2
+        vx=0.7
         yr=0
     else:
         yr=0.1
-    if distance >3.5:
+    if distance >4.6:
         hole_detector.unsuscribe()
         break
         # land=True
@@ -127,7 +127,7 @@ while not rospy.is_shutdown():
     rate.sleep()
 
 # stop the drone first
-target_pub.publish(construct_target(0, 0, 1.3, 0))
+target_pub.publish(construct_target(0, 0, 1, 0))
 
 # boxCV job done, delete to release resources
 del hole_detector
@@ -181,7 +181,7 @@ while cap.isOpened() and not rospy.is_shutdown():
 
         if vx == 0.0 and vy == 0.0:
             stable_count += 1
-        if stable_count > 15:  # stablized
+        if stable_count > 10:  # stablized
             print("Landing")
             land_pub.publish(String("LAND"))
             break
@@ -192,10 +192,10 @@ while cap.isOpened() and not rospy.is_shutdown():
         vx = 0.1
 
 
-    target_pub.publish(construct_target(vx, vy, 1.3, yr))
+    target_pub.publish(construct_target(vx, vy, 1, yr))
     
     rate.sleep()
 
-# When everything done, release the capture
+# When everything donSAFMC-21-D2-Team2/src/e, release the capture
 cap.release()
 cv.destroyAllWindows()
