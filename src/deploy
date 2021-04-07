@@ -114,9 +114,9 @@ while cap.isOpened() and not rospy.is_shutdown():
         #if z < 0.6:
         #    z += 0.02
         #else:
-        z = 0.6
         if curr_square <= 1:
             vx = 0.4
+            z = 0.6
             if total_y < 1.5:
                 vy = 0.4
                 total_y += 0.02
@@ -126,21 +126,29 @@ while cap.isOpened() and not rospy.is_shutdown():
             total_y = 0
             vx = 0.4
             vy = 0
+            z = 0.6
         elif curr_square == 3:
             vx = 0
             vy = -0.4
+            z = 0.6
         else:
             if total_y < 1.5:
                 vy = 0.3
                 total_y += 0.015
+                z = 0.6
             else:
                 vy = 0.0
-            vx = 0.3
+                if z < 2.0:
+                    z += 0.1
+                else:
+                    z = 2.0
+            vx = 0.4
 
     elif curr_state == 2 and num == 1: # approaching
-        z = 0.8
         vy = centre[0] - res[0][0]
         vx = centre[1] - res[0][1]
+        if abs(vx) < 120:
+            z = 0.8
         if abs(vx) < error:
             vx = 0.0
         else:
