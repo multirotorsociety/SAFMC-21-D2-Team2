@@ -50,7 +50,7 @@ class Hole_detector:
         except CvBridgeError as e:
             print(e)
         if(image_topic=="/d400/depth/image_rect_raw"):
-            cv_image=cv_image[:,80:]
+            cv_image=cv_image[:,80:-80]
             (self.rows,self.cols) = cv_image.shape
             cvhue=cv2.merge(((cv_image*255/1000).astype(np.uint8),np.full( (self.rows,self.cols),255, dtype=np.uint8 ),np.full( (self.rows,self.cols),255, dtype=np.uint8 )))
         else:
