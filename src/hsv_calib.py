@@ -1,24 +1,37 @@
 #!/usr/bin/python3
-import roslib
-roslib.load_manifest('SAFMC-21-D2-Team2')
+# import roslib
+# roslib.load_manifest('SAFMC-21-D2-Team2')
 import sys
-import rospy
+# import rospy
 import numpy as np
 import cv2 as cv
 import time
+import socket
 
 # Using uvc cam
 nocam=True
-for i in range(6,10):
+
+if(socket.gethostname()=="pootis-XPS-15-9570"):
+    cam_range=range(2,6)
+else:
+    cam_range=range(6,10)
+for i in cam_range:
     cap = cv.VideoCapture(i)
+    cap.set(cv.CAP_PROP_FRAME_WIDTH , 640)
+    cap.set(cv.CAP_PROP_FRAME_HEIGHT , 480)
     ret, frame = cap.read()
     time.sleep(2)
     if not cap.isOpened():
         print("Cannot open camera ",i)
         #exit()
     else:
+        while frame is None:
+            ret, frame = cap.read()
+            time.sleep(1)
+        print(frame)
         nocam=False
         break
+    
 if nocam:
     exit()
 
