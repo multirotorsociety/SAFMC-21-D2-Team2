@@ -88,13 +88,13 @@ while not rospy.is_shutdown():
             elif yr < 0:
                 yr = max(yr, -0.6)
         last_yr = yerror
-        target_pub.publish(construct_target(vx, vy, 1.3, yr))
+        target_pub.publish(construct_target(vx, vy, 1.5, yr))
         total_yaw += yr / 20.0
 
     rate.sleep()
 
 # stop the drone first
-target_pub.publish(construct_target(0, 0, 1.3, 0))
+target_pub.publish(construct_target(0, 0, 1.5, 0))
 
 # boxCV job done, delete to release resources
 del box
@@ -116,9 +116,10 @@ if nocam:
 
 ret, frame = cap.read()
 centre = (frame.shape[1]/2, frame.shape[0]*2/3)
-error = 13
+error = 20
 p = 0.0013
 vmax = 0.6
+z = 2.0
 
 while cap.isOpened() and not rospy.is_shutdown():
     ret, frame = cap.read()
@@ -131,7 +132,7 @@ while cap.isOpened() and not rospy.is_shutdown():
         vx = 0
         vy = 0
         yr = 0.6
-        if total_yaw > math.pi+0.5:
+        if total_yaw > math.pi+0.3:
             state = 3
             total_yaw = 0
 
@@ -139,11 +140,14 @@ while cap.isOpened() and not rospy.is_shutdown():
         vx = 0.1
         vy = 0
         yr = 0
+        z = 2.0
 
     if state == 4 and num >= 1:
         yr = 0
         vy = centre[0] - res[0][0]
         vx = centre[1] - res[0][1]
+        if abs(vx) < 120:
+            z = 0.8
         if abs(vx) < error:
             vx = 0.0
         else:
@@ -169,7 +173,7 @@ while cap.isOpened() and not rospy.is_shutdown():
             break
         print('vx:', vx, 'vy:', vy)
 
-    target_pub.publish(construct_target(vx, vy, 1.3, yr))
+    target_pub.publish(construct_target(vx, vy, z, yr))
     total_yaw += (yr / 20.0)
     print('state:', state)
     rate.sleep()

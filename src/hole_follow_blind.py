@@ -9,8 +9,26 @@ from std_msgs.msg import String
 import numpy as np
 import cv2 as cv
 from down_cv import landing_pad, green_square
+from mavros_msgs.msg import PositionTarget
 # from green_square import green_square
 import time
+
+#odometry
+current_x=0
+current_y=0
+current_yaw=0
+prev_x=current_x
+prev_y=current_y
+prev_yaw=current_yaw
+def odom_callback(odometry):
+    global current_x, current_y
+    # print(odometry.pose.pose.position.x)
+    current_x=odometry.pose.pose.position.x
+    current_y=odometry.pose.pose.position.y
+    #TODO: get yaw
+odom_sub = rospy.Subscriber('/camera/odom/sample', Odometry, odom_callback)
+
+
 def construct_target(vx, vy, z, yaw_rate):
     #mask = 4035 # xy vel + z pos
     #mask = 3011 # xy vel + z pos + yaw
@@ -64,19 +82,23 @@ hole_detector = Hole_detector(output=True)
 rospy.sleep(1)
 rate = rospy.Rate(10)
 
-circlefound=False
+circlefound=True
+prev_x=current_x
+prev_y=current_y
 circlecount=0
 land=False
 vx=0
 vy=0
 yr=0
-z=1.1
+z=1.3
+
+time.sleep(5)
 while not rospy.is_shutdown():
 
     vx=0
     vy=0
     yr=0
-    z=1.1
+    z=1.3
     hole_center=hole_detector.get_hough()
     space_center=hole_detector.get_space()
     if circlefound==False and hole_center is not None:
@@ -87,18 +109,21 @@ while not rospy.is_shutdown():
             circlecount+=1
             if circlecount>45:
                 circlefound=True
+                prev_x=current_x
+                prev_y=current_y
+
     # elif land:
     #     print("landing")
     #     #TOTO: change to find green square  
     #     land_pub.publish(String("LAND"))
     elif circlefound:
         print("moving forward")
-        vy=-space_center/1.6
-        vx=0.2
+        vy=current_y-prev_y
+        vx=0.7
         yr=0
     else:
         yr=0.1
-    if distance >3.5:
+    if distance >4.6:
         hole_detector.unsuscribe()
         break
         # land=True
@@ -106,7 +131,7 @@ while not rospy.is_shutdown():
     rate.sleep()
 
 # stop the drone first
-target_pub.publish(construct_target(0, 0, 1.3, 0))
+target_pub.publish(construct_target(0, 0, 1, 0))
 
 # boxCV job done, delete to release resources
 del hole_detector
@@ -128,7 +153,7 @@ if nocam:
 
 ret, frame = cap.read()
 centre = (frame.shape[1]/2, frame.shape[0]*2/3)
-error = 25
+error = 13
 p = 0.0013
 vmax = 0.6
 stable_count=0
@@ -160,7 +185,7 @@ while cap.isOpened() and not rospy.is_shutdown():
 
         if vx == 0.0 and vy == 0.0:
             stable_count += 1
-        if stable_count > 15:  # stablized
+        if stable_count > 10:  # stablized
             print("Landing")
             land_pub.publish(String("LAND"))
             break
@@ -171,10 +196,10 @@ while cap.isOpened() and not rospy.is_shutdown():
         vx = 0.1
 
 
-    target_pub.publish(construct_target(vx, vy, 1.3, yr))
+    target_pub.publish(construct_target(vx, vy, 1, yr))
     
     rate.sleep()
 
-# When everything done, release the capture
+# When everything donSAFMC-21-D2-Team2/src/e, release the capture
 cap.release()
 cv.destroyAllWindows()

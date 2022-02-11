@@ -1,0 +1,4 @@
+<launch>
+  <node name="offboard_node" pkg="SAFMC-21-D2-Team2" type="drone" output="screen"/>
+  <node name="deploy_node" pkg="SAFMC-21-D2-Team2" type="deploy" output="screen"/>
+</launch>
